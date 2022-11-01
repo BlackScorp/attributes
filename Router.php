@@ -1,26 +1,27 @@
 <?php
-require_once __DIR__ . '/RouteNotFoundException.php';
+
 
 final class Router
 {
+    /**
+     * @var Route[]
+     */
     private array $routes = [];
     private const SEPARATOR = '::';
-    public function register(string $url, callable $action,string $methods = 'GET|POST'): array
+    public function register(Route $route): array
     {
-        $url = preg_replace('~{(.*)}~mU', '(?<$1>\S+)', $url);
-        $this->routes[$url]= [
-            'action' => $action,
-            'methods' => $methods
-        ];
+        $this->routes[$route->getUrl()]= $route;
         return $this->routes;
     }
     public function handle(Request $request): mixed
     {
         $searchString = $request->getUri() . self::SEPARATOR .$request->getMethod();
 
-        foreach($this->routes as $routeKey => $routeData){
-            [$action,$methods] = array_values($routeData);
-            $rexEx = sprintf('~^(%s)/?%s(%s)$~i',$routeKey,self::SEPARATOR,$methods);
+
+        foreach($this->routes as $routeKey => $route){
+            $action = $route->getAction();
+
+            $rexEx = sprintf('~^(%s)/?%s(%s)$~i',$routeKey,self::SEPARATOR,$route->getMethods());
 
             $matches = [];
             if(!preg_match($rexEx,$searchString,$matches)){
